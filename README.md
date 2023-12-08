@@ -13,6 +13,8 @@
 - GitHub - https://github.com/
 
 ### Создание образа
+#### nfss - server
+#### nfsc - client
 ```
 vagrant up
 ```

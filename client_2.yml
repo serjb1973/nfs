@@ -1,0 +1,40 @@
+---
+- hosts: client
+  become: true
+
+  tasks:
+  - name: update yum
+    yum: update_cache=yes
+
+  - name: install nfs-util
+    yum: name=nfs-utils state=latest
+  
+  - name: install net-tools
+    yum: name=net-tools state=latest
+
+  - name: install iproute
+    yum: name=iproute state=latest
+  
+  - name: FirewallD start and enable
+    systemd:
+      name: firewalld
+      state: started
+      enabled: yes
+
+  - name: Add row in /etc/fstab
+    lineinfile:
+      path: /etc/fstab
+      state: present
+      line: "192.168.56.10:/srv/share/ /mnt nfs vers=3,proto=udp,noauto,x-systemd.automount 0 0"
+
+  - name: Systemd reload
+    systemd:
+      name: remote-fs.target 
+      state: restarted
+      daemon_reload: yes
+      force: yes 
+
+  - name: Re-mount
+    mount:
+      path: /mnt
+      state: remounted

@@ -1,0 +1,68 @@
+---
+- hosts: server
+  become: true
+
+  tasks:
+  - name: update yum
+    yum: update_cache=yes
+
+  - name: install nfs-util
+    yum: name=nfs-utils state=latest
+  
+  - name: install net-tools
+    yum: name=net-tools state=latest
+
+  - name: install iproute
+    yum: name=iproute state=latest
+  
+  - name: FirewallD start and enable
+    systemd:
+      name: firewalld
+      state: started
+      enabled: yes
+
+  - name: FirewallD rules
+    firewalld:
+      permanent: yes
+      immediate: yes
+      service: "{{ item }}"
+      state: enabled
+    with_items:
+     - nfs3
+     - rpc-bind
+     - mountd
+
+  - name: NFS start and enable
+    systemd:
+      name: nfs
+      state: started
+      enabled: yes
+
+  - name: Create directory
+    file:
+      path: /srv/share
+      owner: nfsnobody
+      group: nfsnobody
+      state: directory
+
+  - name: Create subdirectory
+    file:
+      path: /srv/share/upload
+      state: directory
+      owner: nfsnobody
+      group: nfsnobody
+      mode: '0777'
+
+  - name: Ensure required entries in /etc/exports
+    lineinfile:
+      path: /etc/exports
+      state: present
+      line: "/srv/share 192.168.56.11/32(rw,sync,root_squash)"
+
+  - name: Re-export share
+    command: exportfs -r
+
+  - name: Check share
+    command: exportfs -s
+    register: exportfs 
+  - debug: var=exportfs.stdout_lines 
